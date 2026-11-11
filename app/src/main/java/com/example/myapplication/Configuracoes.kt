@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,12 +28,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Configurações: nome do jogador e dificuldade (estado local por enquanto). */
+/** Configurações: nome do jogador, dificuldade e seleção de desafios (estado local por enquanto). */
 @Composable
 fun Configuracoes(onExit: () -> Unit) {
     var nomePlayer by remember { mutableStateOf("") }
     var dificuldade by remember { mutableStateOf("Fácil") }
     val opcoes = listOf("Fácil", "Médio", "Difícil")
+
+    // Estado para seleção de desafios criados pelo Admin
+    var desafioSelecionado by remember { mutableStateOf("Aquecimento") }
+    var mostrarDialogDesafios by remember { mutableStateOf(false) }
+    //Temporário: lista de desafios disponíveis para escolha
+    val desafiosDisponiveis = listOf("Aquecimento", "Arco-íris", "Maratona")
 
     Column(
         modifier = Modifier
@@ -80,6 +88,23 @@ fun Configuracoes(onExit: () -> Unit) {
             }
         }
 
+        Spacer(Modifier.height(24.dp))
+
+        Text("Desafio do Jogo", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+        Text(
+            text = "Desafio ativo: $desafioSelecionado",
+            fontSize = 14.sp,
+            color = Color.LightGray,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = { mostrarDialogDesafios = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Alternar Desafio", color = Color.White)
+        }
+
         Spacer(Modifier.weight(1f))
 
         OutlinedButton(
@@ -88,5 +113,49 @@ fun Configuracoes(onExit: () -> Unit) {
         ) {
             Text("Voltar ao início", color = Color.White)
         }
+    }
+
+    // Diálogo para escolha do desafio
+    if (mostrarDialogDesafios) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogDesafios = false },
+            title = { Text("Selecionar Desafio") },
+            text = {
+                Column(Modifier.selectableGroup()) {
+                    desafiosDisponiveis.forEach { desafio ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = desafioSelecionado == desafio,
+                                    onClick = { desafioSelecionado = desafio },
+                                    role = Role.RadioButton
+                                )
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = desafioSelecionado == desafio,
+                                onClick = null
+                            )
+                            Text(
+                                text = desafio,
+                                modifier = Modifier.padding(start = 12.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { mostrarDialogDesafios = false }) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogDesafios = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

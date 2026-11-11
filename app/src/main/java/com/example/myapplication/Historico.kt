@@ -43,7 +43,7 @@ private data class GameRecord(
 /** Histórico de partidas: filtro por dificuldade e exclusão de itens. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Historico() {
+fun Historico(isAdmin: Boolean = false) {
     // Dados de exemplo (a lista é "observável": mudou, a tela se redesenha)
     val games = remember {
         mutableStateListOf(
@@ -102,8 +102,10 @@ fun Historico() {
                             Text("${game.score} pontos", fontSize = 18.sp, color = Color.White)
                             Text("${game.dificuldade} • ${game.data}", fontSize = 14.sp, color = Color.LightGray)
                         }
-                        IconButton(onClick = { games.remove(game) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir partida", tint = GeniusRed)
+                        if (isAdmin) {
+                            IconButton(onClick = { games.remove(game) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Excluir partida", tint = GeniusRed)
+                            }
                         }
                     }
                 }

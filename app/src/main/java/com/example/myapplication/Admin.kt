@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +15,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -46,9 +50,8 @@ import com.example.myapplication.ui.theme.GeniusSurface
 private data class Desafio(val id: Int, val nome: String, val sequencia: String)
 
 /**
- * Painel do Administrador + gerenciamento de desafios (CRUD) numa tela só.
- *  C = botão "+" (abre o diálogo)   R = LazyColumn
- *  U = ícone de lápis               D = ícone de lixeira
+ * Painel do Administrador + gerenciamento de desafios (CRUD).
+ * Permite também visualizar temporariamente as listas de Ranking e Histórico através de botões.
  */
 @Composable
 fun Admin(onLogout: () -> Unit) {
@@ -60,27 +63,18 @@ fun Admin(onLogout: () -> Unit) {
         )
     }
 
-    // Controle do diálogo: mostrarDialog liga/desliga; editandoId == null significa "novo desafio"
+    // Controle do diálogo para adicionar/editar desafio
     var mostrarDialog by remember { mutableStateOf(false) }
     var editandoId by remember { mutableStateOf<Int?>(null) }
     var nameField by remember { mutableStateOf("") }
     var sequenceField by remember { mutableStateOf("") }
 
+    // Estados para controlar a visibilidade das listas adicionais
+    var mostrarRanking by remember { mutableStateOf(false) }
+    var mostrarHistorico by remember { mutableStateOf(false) }
+
     Scaffold(
         containerColor = GeniusBackground,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    editandoId = null
-                    nameField = ""
-                    sequenceField = ""
-                    mostrarDialog = true
-                },
-                containerColor = GeniusBlue
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Adicionar desafio", tint = Color.White)
-            }
-        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -88,6 +82,7 @@ fun Admin(onLogout: () -> Unit) {
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
+            // Cabeçalho do Admin
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -97,13 +92,33 @@ fun Admin(onLogout: () -> Unit) {
                 OutlinedButton(onClick = onLogout) { Text("Sair", color = Color.White) }
             }
 
+            // Lista de Desafios (Consolidada e mantida como tela principal)
             Text(
                 "Desafios cadastrados: ${Desafios.size}",
                 color = Color.LightGray,
                 modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
             )
 
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(
+                onClick = {
+                    editandoId = null
+                    nameField = ""
+                    sequenceField = ""
+                    mostrarDialog = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = GeniusBlue)
+            ) {
+                Spacer(Modifier.width(8.dp))
+                Text("Novo Desafio", color = Color.White)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 itemsIndexed(Desafios, key = { _, item -> item.id }) { index, desafio ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -134,9 +149,62 @@ fun Admin(onLogout: () -> Unit) {
                     }
                 }
             }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Botões para alternar a visibilidade do Ranking e do Histórico
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        mostrarRanking = !mostrarRanking
+                        if (mostrarRanking) mostrarHistorico = false
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (mostrarRanking) "Ocultar Ranking" else "Mostrar Ranking", color = Color.White)
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        mostrarHistorico = !mostrarHistorico
+                        if (mostrarHistorico) mostrarRanking = false
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (mostrarHistorico) "Ocultar Histórico" else "Mostrar Histórico", color = Color.White)
+                }
+            }
+
+            // Exibição temporária da lista de Ranking
+            if (mostrarRanking) {
+                //Spacer(Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                ) {
+                    Ranking(isAdmin = true)
+                }
+            }
+
+            // Exibição temporária da lista de Histórico
+            if (mostrarHistorico) {
+                //Spacer(Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                ) {
+                    Historico(isAdmin = true)
+                }
+            }
         }
     }
 
+    // Diálogo para criar/editar desafio
     if (mostrarDialog) {
         AlertDialog(
             onDismissRequest = { mostrarDialog = false },
