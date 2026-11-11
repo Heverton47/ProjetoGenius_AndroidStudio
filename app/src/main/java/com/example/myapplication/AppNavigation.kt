@@ -3,68 +3,75 @@ package com.example.myapplication
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ui.theme.GeniusBackground
 
 /**
- * Navegação de nível 1: decide em qual "modo" o usuário está.
- * Home -> Modo Jogador (com Bottom Navigation)
- * Home -> Login Admin -> Painel Admin
+ * Navegação centralizada com 1 NavController.
+ * A barra inferior (Bottom Navigation) é exibida condicionalmente apenas nas telas do jogador.
  */
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = Rotas.HOME) {
+    // Observa a rota atual para decidir se a barra de navegação deve aparecer
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-        composable(Rotas.HOME) {
-            Home(
-                onPlayerMode = { navController.navigate(Rotas.PLAYER_ROOT) },
-                onAdminMode = { navController.navigate(Rotas.ADMIN_LOGIN) }
-            )
-        }
-
-        composable(Rotas.PLAYER_ROOT) {
-            PlayerRoot(onExit = { navController.popBackStack(Rotas.HOME, inclusive = false) })
-        }
-
-        composable(Rotas.ADMIN_LOGIN) {
-            AdminLogin(
-                onLoginSuccess = { navController.navigate(Rotas.ADMIN) },
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Rotas.ADMIN) {
-            Admin(onLogout = { navController.popBackStack(Rotas.HOME, inclusive = false) })
-        }
-    }
-}
-
-/**
- * Navegação de nível 2: o "container" do Modo Jogador.
- * Tem seu próprio NavController para que a Bottom Navigation apareça só aqui.
- */
-@Composable
-fun PlayerRoot(onExit: () -> Unit) {
-    val innerNavController = rememberNavController()
+    // Lista de rotas onde a barra inferior DEVE aparecer
+    val playerRoutes = listOf(
+        Rotas.JOGO,
+        Rotas.RANKING,
+        Rotas.HISTORICO,
+        Rotas.CONFIGURACOES
+    )
 
     Scaffold(
         containerColor = GeniusBackground,
-        bottomBar = { GeniusBottomBar(innerNavController) }
+        bottomBar = {
+            if (currentRoute in playerRoutes) {
+                GeniusBottomBar(navController)
+            }
+        }
     ) { innerPadding ->
         NavHost(
-            navController = innerNavController,
-            startDestination = Rotas.JOGO,
+            navController = navController,
+            startDestination = Rotas.HOME,
             modifier = Modifier.padding(innerPadding)
         ) {
+            // Tela Inicial
+            composable(Rotas.HOME) {
+                Home(
+                    onPlayerMode = { navController.navigate(Rotas.JOGO) },
+                    onAdminMode = { navController.navigate(Rotas.ADMIN_LOGIN) }
+                )
+            }
+
+            // Telas do Modo Jogador
             composable(Rotas.JOGO) { Jogo() }
             composable(Rotas.RANKING) { Ranking() }
             composable(Rotas.HISTORICO) { Historico() }
-            composable(Rotas.CONFIGURACOES) { Configuracoes(onExit = onExit) }
+            composable(Rotas.CONFIGURACOES) {
+                Configuracoes(
+                    onExit = { navController.popBackStack(Rotas.HOME, inclusive = false) }
+                )
+            }
+
+            // Telas do Modo Administrador
+            composable(Rotas.ADMIN_LOGIN) {
+                AdminLogin(
+                    onLoginSuccess = { navController.navigate(Rotas.ADMIN) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Rotas.ADMIN) {
+                Admin(onLogout = { navController.popBackStack(Rotas.HOME, inclusive = false) })
+            }
         }
     }
 }

@@ -60,7 +60,7 @@ fun Admin(onLogout: () -> Unit) {
         )
     }
 
-    // Controle do diálogo: mostrarDialog liga/desliga; editingId == null significa "novo desafio"
+    // Controle do diálogo: mostrarDialog liga/desliga; editandoId == null significa "novo desafio"
     var mostrarDialog by remember { mutableStateOf(false) }
     var editandoId by remember { mutableStateOf<Int?>(null) }
     var nameField by remember { mutableStateOf("") }
@@ -104,7 +104,7 @@ fun Admin(onLogout: () -> Unit) {
             )
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                itemsIndexed(Desafios, key = { _, item -> item.id }) { index, challenge ->
+                itemsIndexed(Desafios, key = { _, item -> item.id }) { index, desafio ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = GeniusSurface)
@@ -116,13 +116,13 @@ fun Admin(onLogout: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(challenge.nome, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                                Text(challenge.sequencia, fontSize = 14.sp, color = Color.LightGray)
+                                Text(desafio.nome, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                                Text(desafio.sequencia, fontSize = 14.sp, color = Color.LightGray)
                             }
                             IconButton(onClick = {
-                                editandoId = challenge.id
-                                nameField = challenge.nome
-                                sequenceField = challenge.sequencia
+                                editandoId = desafio.id
+                                nameField = desafio.nome
+                                sequenceField = desafio.sequencia
                                 mostrarDialog = true
                             }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.White)

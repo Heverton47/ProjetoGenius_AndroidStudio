@@ -1,13 +1,12 @@
 package com.example.myapplication
 
 object Rotas {
-    // Nível 1
+    // Telas Principais
     const val HOME = "home"
-    const val PLAYER_ROOT = "player_root"
     const val ADMIN_LOGIN = "admin_login"
-    const val ADMIN = "admin" // painel + gerenciamento de desafios numa tela só
+    const val ADMIN = "admin"
 
-    // Nível 2 (abas do Modo Jogador)
+    // Telas do Modo Jogador (abas da Bottom Navigation)
     const val JOGO = "jogo"
     const val RANKING = "ranking"
     const val HISTORICO = "historico"

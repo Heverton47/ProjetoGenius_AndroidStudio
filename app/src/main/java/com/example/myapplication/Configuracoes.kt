@@ -49,6 +49,13 @@ fun Configuracoes(onExit: () -> Unit) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = { /*TODO*/ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Adicionar jogador", color = Color.White)
+        }
 
         Spacer(Modifier.height(24.dp))
 
