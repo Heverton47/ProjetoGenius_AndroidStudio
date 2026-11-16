@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.0.21"
     id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -80,6 +81,10 @@ dependencies {
     implementation("androidx.room3:room3-runtime:$room_version")
     implementation("androidx.sqlite:sqlite-framework:2.7.1")
     ksp("androidx.room3:room3-compiler:$room_version")
+
+    // Firebase (Firestore): desafios cadastrados pelo administrador
+    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
+    implementation("com.google.firebase:firebase-firestore")
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")

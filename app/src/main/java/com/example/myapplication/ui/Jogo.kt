@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.myapplication.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,11 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.GeniusBlue
@@ -25,20 +25,17 @@ import com.example.myapplication.ui.theme.GeniusRed
 import com.example.myapplication.ui.theme.GeniusRedLit
 import com.example.myapplication.ui.theme.GeniusYellow
 import com.example.myapplication.ui.theme.GeniusYellowLit
+import com.example.myapplication.viewmodel.GameUiState
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
+/** Tela do jogo. Toda a lógica está no GameViewModel; aqui só desenhamos o GameUiState. */
 @Composable
-fun Jogo(bancoViewModel: BancoViewModel, dificuldadeSelecionada: String = "Fácil") {
-    val jogo by bancoViewModel.jogo.collectAsStateWithLifecycle()
-    val dados by bancoViewModel.dados.collectAsStateWithLifecycle()
-    val ativoId by bancoViewModel.jogadorAtivoId.collectAsStateWithLifecycle()
-    val jogador = dados.jogadores.firstOrNull { it.id == ativoId }
-    val dificuldade = if (jogo.emAndamento || jogo.salvando || jogo.erroAoSalvar) {
-        jogo.dificuldade
-    } else {
-        dificuldadeSelecionada
-    }
+fun Jogo(
+    ui: GameUiState,
+    onIniciar: () -> Unit,
+    onTocarCor: (Int) -> Unit,
+    onSalvarNovamente: () -> Unit
+) {
+    val jogador = ui.jogadorAtivo
 
     val buttonColors = listOf(
         GeniusRed to GeniusRedLit,
@@ -46,6 +43,10 @@ fun Jogo(bancoViewModel: BancoViewModel, dificuldadeSelecionada: String = "Fáci
         GeniusGreen to GeniusGreenLit,
         GeniusYellow to GeniusYellowLit
     )
+
+    // Durante a partida mostra o desafio usado nela; fora dela, o escolhido nas Configurações.
+    val nomeDesafio = if (ui.partidaAberta) ui.nomeDesafioPartida else ui.desafioSelecionado?.nome
+    val textoModo = if (nomeDesafio != null) "Desafio: $nomeDesafio" else "Livre (sequência aleatória)"
 
     Column(
         modifier = Modifier
@@ -58,8 +59,8 @@ fun Jogo(bancoViewModel: BancoViewModel, dificuldadeSelecionada: String = "Fáci
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Rodada: ${jogo.rodada}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("Pontos: ${jogo.score}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Rodada: ${ui.rodada}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Pontos: ${ui.score}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -71,9 +72,9 @@ fun Jogo(bancoViewModel: BancoViewModel, dificuldadeSelecionada: String = "Fáci
                         GeniusButton(
                             normalColor = normal,
                             litColor = lit,
-                            isLit = jogo.litIndex == index,
-                            enabled = jogo.aguardandoJogador,
-                            onClick = { bancoViewModel.tocarCor(index) },
+                            isLit = ui.litIndex == index,
+                            enabled = ui.aguardandoJogador,
+                            onClick = { onTocarCor(index) },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(150.dp)
@@ -85,24 +86,24 @@ fun Jogo(bancoViewModel: BancoViewModel, dificuldadeSelecionada: String = "Fáci
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                jogador?.let { "Jogador: ${it.nome} • Recorde: ${it.recorde}" }
+                text = jogador?.let { "Jogador: ${it.nome} • Recorde: ${it.recorde}" }
                     ?: "Adicione um jogador nas Configurações e selecione-o no Ranking.",
-                color = Color.White
+                color = Color.White,
+                textAlign = TextAlign.Center
             )
-            Text("Dificuldade: $dificuldade", color = Color.LightGray)
-            val tempoPorCor = EstadoJogo(dificuldade = dificuldade).tempoPorCor
-            Text("Limite: $tempoPorCor segundo(s) por cor", color = Color.LightGray)
-            if (jogo.aguardandoJogador) {
-                Text("Tempo: ${jogo.tempoRestante}s", fontSize = 20.sp, color = Color.White)
+            Text("Dificuldade: ${ui.dificuldadeExibida}", color = Color.LightGray)
+            Text("Modo: $textoModo", color = Color.LightGray)
+            Text("Limite: ${ui.tempoPorCor} segundo(s) por cor", color = Color.LightGray)
+            if (ui.aguardandoJogador) {
+                Text("Tempo: ${ui.tempoRestante}s", fontSize = 20.sp, color = Color.White)
             }
-            Text(jogo.status, fontSize = 22.sp, color = Color.White)
+            Text(ui.status, fontSize = 22.sp, color = Color.White)
             Button(
                 onClick = {
-                    if (jogo.erroAoSalvar) bancoViewModel.salvarResultado()
-                    else bancoViewModel.iniciarJogo(dificuldadeSelecionada)
+                    if (ui.erroAoSalvar) onSalvarNovamente() else onIniciar()
                 },
-                enabled = !jogo.emAndamento && !jogo.salvando &&
-                    (jogador != null || jogo.erroAoSalvar),
+                enabled = !ui.emAndamento && !ui.salvando &&
+                    (jogador != null || ui.erroAoSalvar),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
@@ -110,8 +111,8 @@ fun Jogo(bancoViewModel: BancoViewModel, dificuldadeSelecionada: String = "Fáci
             ) {
                 Text(
                     when {
-                        jogo.salvando -> "Salvando..."
-                        jogo.erroAoSalvar -> "Tentar salvar novamente"
+                        ui.salvando -> "Salvando..."
+                        ui.erroAoSalvar -> "Tentar salvar novamente"
                         else -> "Iniciar"
                     },
                     fontSize = 18.sp

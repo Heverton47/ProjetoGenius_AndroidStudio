@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "616507397826",
+    "project_id": "genius-cores-779cc",
+    "storage_bucket": "genius-cores-779cc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:616507397826:android:89010e3c94374d7c790d5b",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCA7AFc6YK4P7vBZ_X9NYWAIO0cXA6FfEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

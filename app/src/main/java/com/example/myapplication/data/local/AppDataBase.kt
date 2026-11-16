@@ -1,4 +1,4 @@
-package com.example.myapplication.data
+package com.example.myapplication.data.local
 
 import android.content.Context
 import androidx.room3.Database
@@ -8,10 +8,6 @@ import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import androidx.sqlite.driver.AndroidSQLiteDriver
-import com.example.myapplication.Class_Jogador
-import com.example.myapplication.Class_Partida
-import com.example.myapplication.JogadorDAO
-import com.example.myapplication.PartidaDAO
 
 @Database(
     entities = [Class_Jogador::class, Class_Partida::class],

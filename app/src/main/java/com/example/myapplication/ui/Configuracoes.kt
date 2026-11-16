@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.myapplication.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -20,7 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,28 +29,30 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.data.remote.Desafio
+import com.example.myapplication.logic.RegrasJogo
+import com.example.myapplication.viewmodel.GameUiState
 
-/** Configurações do jogador, dificuldade e seleção de desafios. */
+/**
+ * Configurações do jogador: cadastro de jogador, dificuldade e escolha do desafio.
+ * Os desafios exibidos aqui vêm do Firestore (cadastrados pelo administrador) e
+ * o desafio escolhido é realmente usado na partida.
+ */
 @Composable
 fun Configuracoes(
-    bancoViewModel: BancoViewModel,
-    dificuldade: String,
-    onDificuldadeChange: (String) -> Unit,
+    ui: GameUiState,
+    onAdicionarJogador: (String, () -> Unit) -> Unit,
+    onDificuldade: (String) -> Unit,
+    onDesafio: (Desafio?) -> Unit,
     onExit: () -> Unit
 ) {
     var nomePlayer by remember { mutableStateOf("") }
-    val ocupado by bancoViewModel.ocupado.collectAsStateWithLifecycle()
-    val opcoes = listOf("Fácil", "Médio", "Difícil")
-
-    // Estado para seleção de desafios criados pelo Admin
-    var desafioSelecionado by remember { mutableStateOf("Aquecimento") }
     var mostrarDialogDesafios by remember { mutableStateOf(false) }
-    //Temporário: lista de desafios disponíveis para escolha
-    val desafiosDisponiveis = listOf("Aquecimento", "Arco-íris", "Maratona")
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
         Text("Configurações", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -65,8 +68,8 @@ fun Configuracoes(
         )
         Spacer(Modifier.height(12.dp))
         OutlinedButton(
-            onClick = { bancoViewModel.adicionarJogador(nomePlayer) { nomePlayer = "" } },
-            enabled = !ocupado,
+            onClick = { onAdicionarJogador(nomePlayer) { nomePlayer = "" } },
+            enabled = !ui.ocupado,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Adicionar jogador", color = Color.White)
@@ -77,19 +80,19 @@ fun Configuracoes(
         Text("Dificuldade", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
 
         Column(Modifier.selectableGroup()) {
-            opcoes.forEach { option ->
+            RegrasJogo.DIFICULDADES.forEach { option ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .selectable(
-                            selected = dificuldade == option,
-                            onClick = { onDificuldadeChange(option) },
+                            selected = ui.dificuldade == option,
+                            onClick = { onDificuldade(option) },
                             role = Role.RadioButton
                         )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(selected = dificuldade == option, onClick = null)
+                    RadioButton(selected = ui.dificuldade == option, onClick = null)
                     Text(option, color = Color.White, modifier = Modifier.padding(start = 12.dp))
                 }
             }
@@ -99,11 +102,14 @@ fun Configuracoes(
 
         Text("Desafio do Jogo", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
         Text(
-            text = "Desafio ativo: $desafioSelecionado",
+            text = "Desafio ativo: ${ui.desafioSelecionado?.nome ?: "Modo livre (sequência aleatória)"}",
             fontSize = 14.sp,
             color = Color.LightGray,
             modifier = Modifier.padding(vertical = 4.dp)
         )
+        ui.desafioSelecionado?.let {
+            Text("Sequência: ${it.sequencia}", fontSize = 14.sp, color = Color.LightGray)
+        }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = { mostrarDialogDesafios = true },
@@ -112,7 +118,7 @@ fun Configuracoes(
             Text("Alternar Desafio", color = Color.White)
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(24.dp))
 
         OutlinedButton(
             onClick = onExit,
@@ -122,34 +128,35 @@ fun Configuracoes(
         }
     }
 
-    // Diálogo para escolha do desafio
+    // Diálogo para escolha do desafio (lista vinda do Firestore + opção de modo livre)
     if (mostrarDialogDesafios) {
         AlertDialog(
             onDismissRequest = { mostrarDialogDesafios = false },
             title = { Text("Selecionar Desafio") },
             text = {
-                Column(Modifier.selectableGroup()) {
-                    desafiosDisponiveis.forEach { desafio ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = desafioSelecionado == desafio,
-                                    onClick = { desafioSelecionado = desafio },
-                                    role = Role.RadioButton
-                                )
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = desafioSelecionado == desafio,
-                                onClick = null
-                            )
-                            Text(
-                                text = desafio,
-                                modifier = Modifier.padding(start = 12.dp)
-                            )
-                        }
+                Column(
+                    Modifier
+                        .selectableGroup()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    OpcaoDesafio(
+                        texto = "Modo livre (sequência aleatória)",
+                        selecionado = ui.desafioSelecionado == null,
+                        onClick = { onDesafio(null) }
+                    )
+                    ui.desafios.forEach { desafio ->
+                        OpcaoDesafio(
+                            texto = desafio.nome,
+                            selecionado = ui.desafioSelecionado?.id == desafio.id,
+                            onClick = { onDesafio(desafio) }
+                        )
+                    }
+                    if (ui.desafios.isEmpty()) {
+                        Text(
+                            "Nenhum desafio cadastrado pelo administrador.",
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     }
                 }
             },
@@ -157,12 +164,21 @@ fun Configuracoes(
                 TextButton(onClick = { mostrarDialogDesafios = false }) {
                     Text("Confirmar")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { mostrarDialogDesafios = false }) {
-                    Text("Cancelar")
-                }
             }
         )
+    }
+}
+
+@Composable
+private fun OpcaoDesafio(texto: String, selecionado: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selecionado, onClick = onClick, role = Role.RadioButton)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selecionado, onClick = null)
+        Text(text = texto, modifier = Modifier.padding(start = 12.dp))
     }
 }

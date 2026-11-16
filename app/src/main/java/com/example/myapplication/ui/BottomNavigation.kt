@@ -1,4 +1,5 @@
-package com.example.myapplication
+package com.example.myapplication.ui
+
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List

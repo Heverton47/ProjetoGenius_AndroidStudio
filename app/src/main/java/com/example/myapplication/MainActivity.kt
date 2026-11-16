@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.example.myapplication.ui.AppNavigation
 import com.example.myapplication.ui.theme.GeniusBackground
 import com.example.myapplication.ui.theme.MyApplicationTheme
 

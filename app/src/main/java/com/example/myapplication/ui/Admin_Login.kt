@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.myapplication.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +13,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,23 +27,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.GeniusBackground
 import com.example.myapplication.ui.theme.GeniusRed
+import com.example.myapplication.viewmodel.AdminUiState
 
 /**
  * Login simulado do administrador.
- *
- * ATENÇÃO: a validação abaixo está na tela só para a Etapa 2 funcionar.
- * O professor exige que a validação fique no ViewModel (Etapa 5):
- * a tela só vai mostrar o campo e o erro vindo do UiState.
- * Credenciais de teste: admin / 1234
+ * A tela só coleta usuário e senha; quem valida é o AdminViewModel (credenciais de teste: admin / 1234).
+ * Quando o UiState passa a ter logado = true, a tela avisa a navegação para abrir o painel.
  */
 @Composable
 fun AdminLogin(
+    ui: AdminUiState,
+    onEntrar: (String, String) -> Unit,
+    onLimparErro: () -> Unit,
     onLoginSuccess: () -> Unit,
     onBack: () -> Unit
 ) {
     var user by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(ui.logado) {
+        if (ui.logado) onLoginSuccess()
+    }
 
     Column(
         modifier = Modifier
@@ -58,7 +63,7 @@ fun AdminLogin(
 
         OutlinedTextField(
             value = user,
-            onValueChange = { user = it; errorMsg = null },
+            onValueChange = { user = it; onLimparErro() },
             label = { Text("Usuário") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -68,16 +73,16 @@ fun AdminLogin(
 
         OutlinedTextField(
             value = senha,
-            onValueChange = { senha = it; errorMsg = null },
+            onValueChange = { senha = it; onLimparErro() },
             label = { Text("Senha") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (errorMsg != null) {
+        ui.erroLogin?.let { erro ->
             Text(
-                text = errorMsg!!,
+                text = erro,
                 color = GeniusRed,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -86,13 +91,7 @@ fun AdminLogin(
         Spacer(Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                if (user == "admin" && senha == "1234") {
-                    onLoginSuccess()
-                } else {
-                    errorMsg = "Usuário ou senha inválidos"
-                }
-            },
+            onClick = { onEntrar(user, senha) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
