@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -32,26 +33,65 @@ import com.example.myapplication.ui.theme.GeniusYellow
 import com.example.myapplication.ui.theme.GeniusYellowLit
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
-/**
- * Tela do jogo (SÓ VISUAL por enquanto).
- *
- * O "Iniciar" aqui apenas pisca uma sequência fixa para provar que a UI funciona.
- * Na Etapa 3 (lógica) e na Etapa 5 (ViewModel) esse estado e essas regras
- * saem daqui e vão para o GameViewModel / GameUiState.
- */
 @Composable
-fun Jogo() {
+fun Jogo(dificuldade: String = "Fácil") {
     val scope = rememberCoroutineScope()
-
-    // Estado local temporário (será substituído pelo UiState do ViewModel)
-    var litIndex by remember { mutableIntStateOf(-1) }      // -1 = nenhum botão aceso
+    var litIndex by remember { mutableIntStateOf(-1) }
     var status by remember { mutableStateOf("Toque em Iniciar") }
-    var mostrandoSequencia by remember { mutableStateOf(false) }
+    var jogoEmAndamento by remember { mutableStateOf(false) }
+    var aguardandoJogador by remember { mutableStateOf(false) }
+    var sequencia by remember { mutableStateOf(emptyList<Int>()) }
+    var indiceJogador by remember { mutableIntStateOf(0) }
     var rodada by remember { mutableIntStateOf(0) }
     var score by remember { mutableIntStateOf(0) }
+    var tempoRestante by remember { mutableIntStateOf(0) }
 
-    // Par (cor normal, cor acesa) de cada botão, na ordem: vermelho, azul, verde, amarelo
+    val tempoPorCor = when (dificuldade) {
+        "Difícil" -> 1
+        "Médio" -> 3
+        else -> 5
+    }
+
+    suspend fun mostrarSequencia() {
+        aguardandoJogador = false
+        status = "Observe..."
+        litIndex = -1
+        delay(600)
+        for (cor in sequencia) {
+            litIndex = cor
+            delay(500)
+            litIndex = -1
+            delay(300)
+        }
+        indiceJogador = 0
+        tempoRestante = tempoPorCor
+        status = "Sua vez!"
+        aguardandoJogador = true
+    }
+
+    LaunchedEffect(aguardandoJogador, indiceJogador) {
+        if (aguardandoJogador) {
+            tempoRestante = tempoPorCor
+            while (tempoRestante > 0) {
+                delay(1000)
+                tempoRestante--
+            }
+            aguardandoJogador = false
+            jogoEmAndamento = false
+            litIndex = -1
+            status = "Tempo esgotado!"
+        }
+    }
+
+    LaunchedEffect(litIndex, aguardandoJogador) {
+        if (aguardandoJogador && litIndex != -1) {
+            delay(150)
+            litIndex = -1
+        }
+    }
+
     val buttonColors = listOf(
         GeniusRed to GeniusRedLit,
         GeniusBlue to GeniusBlueLit,
@@ -66,7 +106,6 @@ fun Jogo() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Topo: rodada e pontuação
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -75,7 +114,6 @@ fun Jogo() {
             Text("Pontos: $score", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
 
-        // Centro: grade 2x2 de botões
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             for (linha in 0..1) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -86,13 +124,23 @@ fun Jogo() {
                             normalColor = normal,
                             litColor = lit,
                             isLit = litIndex == index,
-                            enabled = !mostrandoSequencia,
+                            enabled = aguardandoJogador,
                             onClick = {
-                                // Feedback visual ao tocar (a verificação de acerto vem na Etapa 3)
-                                scope.launch {
-                                    litIndex = index
-                                    delay(200)
+                                if (index != sequencia[indiceJogador]) {
+                                    aguardandoJogador = false
+                                    jogoEmAndamento = false
                                     litIndex = -1
+                                    status = "Sequência errada!"
+                                } else {
+                                    litIndex = index
+                                    indiceJogador++
+                                    if (indiceJogador == sequencia.size) {
+                                        aguardandoJogador = false
+                                        score++
+                                        rodada++
+                                        sequencia = sequencia + Random.nextInt(4)
+                                        scope.launch { mostrarSequencia() }
+                                    }
                                 }
                             },
                             modifier = Modifier
@@ -104,26 +152,22 @@ fun Jogo() {
             }
         }
 
-        // Base: mensagem de status e botão Iniciar
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Dificuldade: $dificuldade", color = Color.LightGray)
+            Text("Limite: $tempoPorCor segundo(s) por cor", color = Color.LightGray)
+            if (aguardandoJogador) {
+                Text("Tempo: ${tempoRestante}s", fontSize = 20.sp, color = Color.White)
+            }
             Text(status, fontSize = 22.sp, color = Color.White)
             Button(
                 onClick = {
-                    scope.launch {
-                        mostrandoSequencia = true
-                        status = "Observe..."
-                        rodada = 1
-                        for (i in listOf(0, 2, 1, 3)) { // sequência de exemplo
-                            delay(300)
-                            litIndex = i
-                            delay(500)
-                            litIndex = -1
-                        }
-                        status = "Sua vez!"
-                        mostrandoSequencia = false
-                    }
+                    jogoEmAndamento = true
+                    score = 0
+                    rodada = 1
+                    sequencia = listOf(Random.nextInt(4))
+                    scope.launch { mostrarSequencia() }
                 },
-                enabled = !mostrandoSequencia,
+                enabled = !jogoEmAndamento,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)

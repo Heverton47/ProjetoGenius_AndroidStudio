@@ -28,11 +28,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Configurações: nome do jogador, dificuldade e seleção de desafios (estado local por enquanto). */
+/** Configurações do jogador, dificuldade e seleção de desafios. */
 @Composable
-fun Configuracoes(onExit: () -> Unit) {
+fun Configuracoes(
+    dificuldade: String,
+    onDificuldadeChange: (String) -> Unit,
+    onExit: () -> Unit
+) {
     var nomePlayer by remember { mutableStateOf("") }
-    var dificuldade by remember { mutableStateOf("Fácil") }
     val opcoes = listOf("Fácil", "Médio", "Difícil")
 
     // Estado para seleção de desafios criados pelo Admin
@@ -76,7 +79,7 @@ fun Configuracoes(onExit: () -> Unit) {
                         .fillMaxWidth()
                         .selectable(
                             selected = dificuldade == option,
-                            onClick = { dificuldade = option },
+                            onClick = { onDificuldadeChange(option) },
                             role = Role.RadioButton
                         )
                         .padding(vertical = 4.dp),

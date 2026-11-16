@@ -1,4 +1,15 @@
 package com.example.myapplication
 
-//ARQUIVO PARA A INSERÇÃO DA PERMANÊNCIA DOS DADOS NO BANCO DE DADOS!!!!!
-//AS CONFIG DOS DESAFIOS DO JOGO (NIVEL DE DESAFIO E PARCELA EDITADA PELO ADMIN) SERÃO PROVAVELMENTE FEITAS PELO FIRESTORE...
+import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.Query
+
+@Dao
+interface PartidaDAO {
+
+    @Insert
+    suspend fun inserir(partida: Class_Partida)
+
+    @Query("SELECT * FROM partidas")
+    suspend fun buscarPartidas(): List<Class_Partida>
+}

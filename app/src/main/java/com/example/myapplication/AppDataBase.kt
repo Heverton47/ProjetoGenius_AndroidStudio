@@ -1,20 +1,23 @@
 package com.example.myapplication.data
 
-/*
 import android.content.Context
 import androidx.room3.Database
 import androidx.room3.Room
 import androidx.room3.RoomDatabase
+import androidx.sqlite.driver.AndroidSQLiteDriver
+import com.example.myapplication.Class_Jogador
+import com.example.myapplication.Class_Partida
+import com.example.myapplication.JogadorDAO
+import com.example.myapplication.PartidaDAO
 
-//PREPARAÇÃO PARA A INSERÇÃO DA PERMANÊNCIA DOS DADOS NO BANCO DE DADOS!!!!!
 @Database(
-//    entities = [Class_Jogador::class, Class_Partida::class],
+    entities = [Class_Jogador::class, Class_Partida::class],
     version = 1,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-//    abstract fun canalDao(): JogadorDAO
-//    abstract fun videoDao(): PartidaDAO
+    abstract fun jogadorDAO(): JogadorDAO
+    abstract fun partidaDAO(): PartidaDAO
 
     companion object {
         @Volatile
@@ -22,13 +25,13 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+                INSTANCE ?: Room.databaseBuilder<AppDatabase>(
                     context.applicationContext,
-                    AppDatabase::class.java,
                     "genius_database"
-                ).build().also { INSTANCE = it }
+                ).setDriver(AndroidSQLiteDriver())
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }
 }
-*/

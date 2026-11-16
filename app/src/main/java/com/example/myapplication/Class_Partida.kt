@@ -1,6 +1,14 @@
 package com.example.myapplication
 
-//ARQUIVO PARA A INSERÇÃO DA PERMANÊNCIA DOS DADOS NO BANCO DE DADOS!!!!!
-//AS CONFIG DOS DESAFIOS DO JOGO (NIVEL DE DESAFIO E PARCELA EDITADA PELO ADMIN) SERÃO PROVAVELMENTE FEITAS PELO FIRESTORE...
-class Class_Partida {
-}
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
+
+@Entity(tableName = "partidas")
+data class Class_Partida(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int,
+    val jogadorId: Int,
+    val pontuacao: Int,
+    val dificuldade: String,
+    val data: Long
+)

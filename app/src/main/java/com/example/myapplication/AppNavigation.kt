@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +21,7 @@ import com.example.myapplication.ui.theme.GeniusBackground
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    var dificuldade by rememberSaveable { mutableStateOf("Fácil") }
 
     // Observa a rota atual para decidir se a barra de navegação deve aparecer
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -53,11 +57,13 @@ fun AppNavigation() {
             }
 
             // Telas do Modo Jogador
-            composable(Rotas.JOGO) { Jogo() }
+            composable(Rotas.JOGO) { Jogo(dificuldade) }
             composable(Rotas.RANKING) { Ranking() }
             composable(Rotas.HISTORICO) { Historico() }
             composable(Rotas.CONFIGURACOES) {
                 Configuracoes(
+                    dificuldade = dificuldade,
+                    onDificuldadeChange = { dificuldade = it },
                     onExit = { navController.popBackStack(Rotas.HOME, inclusive = false) }
                 )
             }

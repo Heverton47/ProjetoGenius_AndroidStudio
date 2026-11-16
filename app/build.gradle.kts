@@ -78,6 +78,7 @@ dependencies {
     val room_version = "3.0.3"
 
     implementation("androidx.room3:room3-runtime:$room_version")
+    implementation("androidx.sqlite:sqlite-framework:2.7.1")
     ksp("androidx.room3:room3-compiler:$room_version")
 
     // ViewModel
