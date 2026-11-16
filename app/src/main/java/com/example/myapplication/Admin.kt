@@ -54,7 +54,7 @@ private data class Desafio(val id: Int, val nome: String, val sequencia: String)
  * Permite também visualizar temporariamente as listas de Ranking e Histórico através de botões.
  */
 @Composable
-fun Admin(onLogout: () -> Unit) {
+fun Admin(bancoViewModel: BancoViewModel, onLogout: () -> Unit) {
     val Desafios = remember {
         mutableStateListOf(
             Desafio(1, "Aquecimento", "Vermelho, Azul, Verde"),
@@ -186,7 +186,7 @@ fun Admin(onLogout: () -> Unit) {
                         .fillMaxWidth()
                         .height(300.dp)
                 ) {
-                    Ranking(isAdmin = true)
+                    Ranking(bancoViewModel, isAdmin = true)
                 }
             }
 
@@ -198,7 +198,7 @@ fun Admin(onLogout: () -> Unit) {
                         .fillMaxWidth()
                         .height(300.dp)
                 ) {
-                    Historico(isAdmin = true)
+                    Historico(bancoViewModel, isAdmin = true)
                 }
             }
         }

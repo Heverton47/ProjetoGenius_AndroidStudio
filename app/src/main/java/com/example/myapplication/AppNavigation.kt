@@ -2,12 +2,19 @@ package com.example.myapplication
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -19,8 +26,20 @@ import com.example.myapplication.ui.theme.GeniusBackground
  * A barra inferior (Bottom Navigation) é exibida condicionalmente apenas nas telas do jogador.
  */
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    bancoViewModel: BancoViewModel = viewModel(
+        factory = BancoViewModel.factory(LocalContext.current.applicationContext)
+    )
+) {
     val navController = rememberNavController()
+    val mensagem by bancoViewModel.mensagem.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(mensagem) {
+        mensagem?.let {
+            snackbar.showSnackbar(it)
+            bancoViewModel.limparMensagem()
+        }
+    }
     var dificuldade by rememberSaveable { mutableStateOf("Fácil") }
 
     // Observa a rota atual para decidir se a barra de navegação deve aparecer
@@ -37,6 +56,7 @@ fun AppNavigation() {
 
     Scaffold(
         containerColor = GeniusBackground,
+        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (currentRoute in playerRoutes) {
                 GeniusBottomBar(navController)
@@ -57,11 +77,12 @@ fun AppNavigation() {
             }
 
             // Telas do Modo Jogador
-            composable(Rotas.JOGO) { Jogo(dificuldade) }
-            composable(Rotas.RANKING) { Ranking() }
-            composable(Rotas.HISTORICO) { Historico() }
+            composable(Rotas.JOGO) { Jogo(bancoViewModel, dificuldade) }
+            composable(Rotas.RANKING) { Ranking(bancoViewModel) }
+            composable(Rotas.HISTORICO) { Historico(bancoViewModel) }
             composable(Rotas.CONFIGURACOES) {
                 Configuracoes(
+                    bancoViewModel = bancoViewModel,
                     dificuldade = dificuldade,
                     onDificuldadeChange = { dificuldade = it },
                     onExit = { navController.popBackStack(Rotas.HOME, inclusive = false) }
@@ -76,7 +97,7 @@ fun AppNavigation() {
                 )
             }
             composable(Rotas.ADMIN) {
-                Admin(onLogout = { navController.popBackStack(Rotas.HOME, inclusive = false) })
+                Admin(bancoViewModel = bancoViewModel, onLogout = { navController.popBackStack(Rotas.HOME, inclusive = false) })
             }
         }
     }

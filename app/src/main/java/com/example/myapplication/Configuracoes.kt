@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,11 +32,13 @@ import androidx.compose.ui.unit.sp
 /** Configurações do jogador, dificuldade e seleção de desafios. */
 @Composable
 fun Configuracoes(
+    bancoViewModel: BancoViewModel,
     dificuldade: String,
     onDificuldadeChange: (String) -> Unit,
     onExit: () -> Unit
 ) {
     var nomePlayer by remember { mutableStateOf("") }
+    val ocupado by bancoViewModel.ocupado.collectAsStateWithLifecycle()
     val opcoes = listOf("Fácil", "Médio", "Difícil")
 
     // Estado para seleção de desafios criados pelo Admin
@@ -62,7 +65,8 @@ fun Configuracoes(
         )
         Spacer(Modifier.height(12.dp))
         OutlinedButton(
-            onClick = { /*TODO*/ },
+            onClick = { bancoViewModel.adicionarJogador(nomePlayer) { nomePlayer = "" } },
+            enabled = !ocupado,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Adicionar jogador", color = Color.White)

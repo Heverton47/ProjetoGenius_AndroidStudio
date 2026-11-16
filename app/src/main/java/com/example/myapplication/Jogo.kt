@@ -10,13 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,65 +25,19 @@ import com.example.myapplication.ui.theme.GeniusRed
 import com.example.myapplication.ui.theme.GeniusRedLit
 import com.example.myapplication.ui.theme.GeniusYellow
 import com.example.myapplication.ui.theme.GeniusYellowLit
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.random.Random
+
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-fun Jogo(dificuldade: String = "Fácil") {
-    val scope = rememberCoroutineScope()
-    var litIndex by remember { mutableIntStateOf(-1) }
-    var status by remember { mutableStateOf("Toque em Iniciar") }
-    var jogoEmAndamento by remember { mutableStateOf(false) }
-    var aguardandoJogador by remember { mutableStateOf(false) }
-    var sequencia by remember { mutableStateOf(emptyList<Int>()) }
-    var indiceJogador by remember { mutableIntStateOf(0) }
-    var rodada by remember { mutableIntStateOf(0) }
-    var score by remember { mutableIntStateOf(0) }
-    var tempoRestante by remember { mutableIntStateOf(0) }
-
-    val tempoPorCor = when (dificuldade) {
-        "Difícil" -> 1
-        "Médio" -> 3
-        else -> 5
-    }
-
-    suspend fun mostrarSequencia() {
-        aguardandoJogador = false
-        status = "Observe..."
-        litIndex = -1
-        delay(600)
-        for (cor in sequencia) {
-            litIndex = cor
-            delay(500)
-            litIndex = -1
-            delay(300)
-        }
-        indiceJogador = 0
-        tempoRestante = tempoPorCor
-        status = "Sua vez!"
-        aguardandoJogador = true
-    }
-
-    LaunchedEffect(aguardandoJogador, indiceJogador) {
-        if (aguardandoJogador) {
-            tempoRestante = tempoPorCor
-            while (tempoRestante > 0) {
-                delay(1000)
-                tempoRestante--
-            }
-            aguardandoJogador = false
-            jogoEmAndamento = false
-            litIndex = -1
-            status = "Tempo esgotado!"
-        }
-    }
-
-    LaunchedEffect(litIndex, aguardandoJogador) {
-        if (aguardandoJogador && litIndex != -1) {
-            delay(150)
-            litIndex = -1
-        }
+fun Jogo(bancoViewModel: BancoViewModel, dificuldadeSelecionada: String = "Fácil") {
+    val jogo by bancoViewModel.jogo.collectAsStateWithLifecycle()
+    val dados by bancoViewModel.dados.collectAsStateWithLifecycle()
+    val ativoId by bancoViewModel.jogadorAtivoId.collectAsStateWithLifecycle()
+    val jogador = dados.jogadores.firstOrNull { it.id == ativoId }
+    val dificuldade = if (jogo.emAndamento || jogo.salvando || jogo.erroAoSalvar) {
+        jogo.dificuldade
+    } else {
+        dificuldadeSelecionada
     }
 
     val buttonColors = listOf(
@@ -110,8 +58,8 @@ fun Jogo(dificuldade: String = "Fácil") {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Rodada: $rodada", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("Pontos: $score", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Rodada: ${jogo.rodada}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Pontos: ${jogo.score}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -123,26 +71,9 @@ fun Jogo(dificuldade: String = "Fácil") {
                         GeniusButton(
                             normalColor = normal,
                             litColor = lit,
-                            isLit = litIndex == index,
-                            enabled = aguardandoJogador,
-                            onClick = {
-                                if (index != sequencia[indiceJogador]) {
-                                    aguardandoJogador = false
-                                    jogoEmAndamento = false
-                                    litIndex = -1
-                                    status = "Sequência errada!"
-                                } else {
-                                    litIndex = index
-                                    indiceJogador++
-                                    if (indiceJogador == sequencia.size) {
-                                        aguardandoJogador = false
-                                        score++
-                                        rodada++
-                                        sequencia = sequencia + Random.nextInt(4)
-                                        scope.launch { mostrarSequencia() }
-                                    }
-                                }
-                            },
+                            isLit = jogo.litIndex == index,
+                            enabled = jogo.aguardandoJogador,
+                            onClick = { bancoViewModel.tocarCor(index) },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(150.dp)
@@ -153,27 +84,38 @@ fun Jogo(dificuldade: String = "Fácil") {
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                jogador?.let { "Jogador: ${it.nome} • Recorde: ${it.recorde}" }
+                    ?: "Adicione um jogador nas Configurações e selecione-o no Ranking.",
+                color = Color.White
+            )
             Text("Dificuldade: $dificuldade", color = Color.LightGray)
+            val tempoPorCor = EstadoJogo(dificuldade = dificuldade).tempoPorCor
             Text("Limite: $tempoPorCor segundo(s) por cor", color = Color.LightGray)
-            if (aguardandoJogador) {
-                Text("Tempo: ${tempoRestante}s", fontSize = 20.sp, color = Color.White)
+            if (jogo.aguardandoJogador) {
+                Text("Tempo: ${jogo.tempoRestante}s", fontSize = 20.sp, color = Color.White)
             }
-            Text(status, fontSize = 22.sp, color = Color.White)
+            Text(jogo.status, fontSize = 22.sp, color = Color.White)
             Button(
                 onClick = {
-                    jogoEmAndamento = true
-                    score = 0
-                    rodada = 1
-                    sequencia = listOf(Random.nextInt(4))
-                    scope.launch { mostrarSequencia() }
+                    if (jogo.erroAoSalvar) bancoViewModel.salvarResultado()
+                    else bancoViewModel.iniciarJogo(dificuldadeSelecionada)
                 },
-                enabled = !jogoEmAndamento,
+                enabled = !jogo.emAndamento && !jogo.salvando &&
+                    (jogador != null || jogo.erroAoSalvar),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
                     .height(52.dp)
             ) {
-                Text("Iniciar", fontSize = 18.sp)
+                Text(
+                    when {
+                        jogo.salvando -> "Salvando..."
+                        jogo.erroAoSalvar -> "Tentar salvar novamente"
+                        else -> "Iniciar"
+                    },
+                    fontSize = 18.sp
+                )
             }
         }
     }

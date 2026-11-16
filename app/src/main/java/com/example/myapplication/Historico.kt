@@ -11,6 +11,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -19,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,28 +37,17 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.GeniusRed
 import com.example.myapplication.ui.theme.GeniusSurface
 
-// Modelo temporário só para a tela. Na Etapa 4 isso vira a Entity do Room.
-private data class GameRecord(
-    val id: Int,
-    val dificuldade: String,
-    val score: Int,
-    val data: String
-)
-
-/** Histórico de partidas: filtro por dificuldade e exclusão de itens. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Historico(isAdmin: Boolean = false) {
-    // Dados de exemplo (a lista é "observável": mudou, a tela se redesenha)
-    val games = remember {
-        mutableStateListOf(
-            GameRecord(1, "Fácil", 12, "05/11/2026"),
-            GameRecord(2, "Médio", 20, "06/11/2026"),
-            GameRecord(3, "Difícil", 9, "07/11/2026"),
-            GameRecord(4, "Fácil", 15, "08/11/2026"),
-            GameRecord(5, "Médio", 27, "09/11/2026")
-        )
-    }
+fun Historico(bancoViewModel: BancoViewModel, isAdmin: Boolean = false) {
+    val dados by bancoViewModel.dados.collectAsStateWithLifecycle()
+    val ocupado by bancoViewModel.ocupado.collectAsStateWithLifecycle()
+    var excluir by remember { mutableStateOf<Class_Partida?>(null) }
+    val games = dados.partidas.sortedWith(
+        compareByDescending<Class_Partida> { it.data }.thenByDescending { it.id }
+    )
+    val jogadores = dados.jogadores.associateBy { it.id }
+    val formatoData = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
     // null = sem filtro (mostra todas)
     var selectedFilter by remember { mutableStateOf<String?>(null) }
 
@@ -85,6 +79,10 @@ fun Historico(isAdmin: Boolean = false) {
             }
         }
 
+        if (filteredGames.isEmpty()) {
+            Text("Nenhuma partida registrada.", color = Color.LightGray)
+        }
+
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(filteredGames, key = { it.id }) { game ->
                 Card(
@@ -99,11 +97,12 @@ fun Historico(isAdmin: Boolean = false) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("${game.score} pontos", fontSize = 18.sp, color = Color.White)
-                            Text("${game.dificuldade} • ${game.data}", fontSize = 14.sp, color = Color.LightGray)
+                            Text(jogadores[game.jogadorId]?.nome ?: "Jogador removido", color = Color.White)
+                            Text("${game.pontuacao} pontos", fontSize = 18.sp, color = Color.White)
+                            Text("${game.dificuldade} • ${formatoData.format(Date(game.data))}", fontSize = 14.sp, color = Color.LightGray)
                         }
                         if (isAdmin) {
-                            IconButton(onClick = { games.remove(game) }) {
+                            IconButton(onClick = { excluir = game }, enabled = !ocupado) {
                                 Icon(Icons.Default.Delete, contentDescription = "Excluir partida", tint = GeniusRed)
                             }
                         }
@@ -111,5 +110,25 @@ fun Historico(isAdmin: Boolean = false) {
                 }
             }
         }
+    }
+
+    excluir?.let { partida ->
+        AlertDialog(
+            onDismissRequest = { excluir = null },
+            title = { Text("Excluir partida?") },
+            text = { Text("Deseja excluir esta partida do histórico? O recorde do jogador será mantido.") },
+            confirmButton = {
+                TextButton(
+                    enabled = !ocupado,
+                    onClick = {
+                        bancoViewModel.excluirPartida(partida)
+                        excluir = null
+                    }
+                ) { Text("Excluir") }
+            },
+            dismissButton = {
+                TextButton(onClick = { excluir = null }) { Text("Cancelar") }
+            }
+        )
     }
 }
